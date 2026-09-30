@@ -1,0 +1,23 @@
+agent: print-shop
+owns:
+  - production
+  - printer
+  - plate
+  - ink
+  - paper
+  - finishing
+  - production_constraints
+  - manufacturing_quality
+hands_off:
+  - editorial_meaning
+  - narrative_structure
+  - authorial_intent
+contract_out:
+  - print_spec
+  - proof
+  - production_result
+receives:
+  - print_ready_document
+  - color_spec
+  - paper_spec
+  - finishing_spec
