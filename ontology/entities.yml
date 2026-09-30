@@ -1,0 +1,56 @@
+entities:
+  meaning:
+    - intent
+    - editorial_intent
+    - visual_intent
+  content:
+    - text
+    - image
+    - table
+    - illustration
+    - caption
+  geometry:
+    - point
+    - line
+    - curve
+    - path
+    - rectangle
+    - page
+    - margin
+    - grid
+  color:
+    - rgb
+    - cmyk
+    - gray
+    - lab
+    - spot
+    - devicen
+    - icc_profile
+  material:
+    - colorant
+    - ink
+    - paper
+    - toner
+    - plate
+  formats:
+    - html
+    - css
+    - tex
+    - pdf
+    - postscript
+    - eps
+    - dxf
+  process:
+    - composition
+    - imposition
+    - separation
+    - rasterization
+    - proofing
+    - printing
+    - binding
+    - finishing
+  experience:
+    - screen_view
+    - printed_read
+    - handling
+    - distribution
