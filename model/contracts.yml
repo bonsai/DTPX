@@ -1,0 +1,19 @@
+contracts:
+  editor_to_dtpx:
+    input: [structured_content, page_intent, assets]
+    output: [layout_spec, print_spec]
+  dtpx_to_printshop:
+    input: [print_ready_pdf, color_spec, paper_spec, finishing_spec]
+    output: [proof, production_result]
+  dtpx_to_web:
+    input: [content, layout_intent]
+    output: [html, css]
+  cad_to_dtpx:
+    input: [dxf, drawing_metadata]
+    output: [placed_geometry]
+  tex_to_dtpx:
+    input: [tex, fonts, assets]
+    output: [pdf]
+  dtpx_to_experience:
+    input: [print, pdf, html]
+    output: [observation, proof]
