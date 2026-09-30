@@ -1,0 +1,20 @@
+pipeline:
+  semantic: {input: meaning, output: structured_content}
+  editorial: {input: structured_content, output: document}
+  composition: {input: document, output: pages}
+  graphics: {input: pages, output: geometry_and_color}
+  color: {input: color, output: color_managed_representation}
+  pdl:
+    input: pages
+    output: [postscript, pdf]
+  raster: {input: pdl, output: device_raster}
+  production:
+    input: device_raster
+    output: [plate, printer_job]
+  material: {input: printer_job, output: printed_object}
+  digital:
+    input: [html, pdf]
+    output: screen_experience
+  feedback:
+    input: experience
+    output: [editorial_change, production_change, design_change]
