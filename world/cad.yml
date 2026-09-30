@@ -1,0 +1,14 @@
+agent: cad
+owns:
+  - geometry
+  - drawing
+  - dimensions
+  - layers
+  - dxf
+hands_off:
+  - editorial_narrative
+  - ink_recipe
+contract_out:
+  - geometry
+  - drawing
+  - dxf
