@@ -1,0 +1,22 @@
+agent: editor
+owns:
+  - meaning
+  - editorial_intent
+  - structure
+  - audience
+  - narrative
+hands_off:
+  - color_separation
+  - imposition
+  - printer_settings
+  - ink_material
+  - paper_manufacturing
+contract_out:
+  - content
+  - manuscript
+  - structured_document
+receives:
+  - proof
+  - production_constraints
+  - defects
+  - cost_constraints
