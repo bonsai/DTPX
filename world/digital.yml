@@ -1,0 +1,16 @@
+agent: digital
+owns:
+  - html
+  - css
+  - browser_render
+  - screen_experience
+  - responsive_layout
+hands_off:
+  - physical_ink
+  - plate
+  - paper
+contract_out:
+  - html
+  - css
+  - screenshot
+  - digital_proof
