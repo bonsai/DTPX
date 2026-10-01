@@ -12,8 +12,9 @@ contracts:
     input: [dxf, drawing_metadata]
     output: [placed_geometry]
   tex_to_dtpx:
-    input: [tex, fonts, assets]
-    output: [pdf]
+    # 実装仕様: model/tex-binding.md
+    input: [tex, fonts, assets, template]
+    output: [pdf, log]
   dtpx_to_experience:
     input: [print, pdf, html]
     output: [observation, proof]
