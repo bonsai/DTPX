@@ -1,0 +1,212 @@
+# =============================================================================
+# PDL — Page Description Language
+# =============================================================================
+# TeX / PostScript / Ghostscript / DXF / SVG / プロッタ言語 を
+# **一つの型**として定義する。
+#
+# 主張: これらは「別々の形式」ではなく、
+#       同じ基底（ページ・パス・テキスト・インク）についての
+#       **異なる構文**にすぎない。ただし減損は非対称である。
+#
+# canonical な定義:
+#
+#     PDL := (Syntax, Semantics, Resolution, Capability, Interpreter)
+#
+#     Syntax      — 字句と文法。bytes/text としてどうparseするか
+#     Semantics   — 基底の意味。Geometry + Paint + Resource が何を意味するか
+#     Resolution  — 原点・単位・向き・Y 軸方向をどう解決するか
+#     Capability  — 何を表現できるかの限界
+#     Interpreter — Semantics を実行する実装
+#
+# =============================================================================
+
+pdl:
+  # ---------------------------------------------------------------------------
+  # 構成要素
+  # ---------------------------------------------------------------------------
+  syntax:
+    # テキストかバイナリか
+    text_based: [svg, postscript_level2, postscript_level3, hpgl, dxf_ascii]
+    binary: [pdf, dxf_binary, eps_binary_preview]
+    # 構文の由来
+    grammar:
+      - name: XML-like      # SVG
+        member: [svg]
+      - name: stack_postscript # TeX, PostScript
+        member: [tex, postscript_level2, postscript_level3, ghostscript_vm]
+      - name: record_based   # DXF (group code + value の列)
+        member: [dxf_ascii, dxf_binary]
+      - name: command_stream # プロッタ言語
+        member: [hpgl, gpgl, epson_escapes]
+
+  semantics:
+    # すべての PDL が共有する最小意味域。
+    # ここが「等価」の根拠であり、DTPX ontology の
+    # geometry / color / material に写像される。
+    shared_base:
+      - page_geometry    # width, height, origin, y_axis_direction
+      - path             # point, line, curve, path, rectangle
+      - paint            # fill, stroke, color_space, overprint, knockout
+      - text_run         # font_ref, size, glyph, positioning, writing_mode
+      - image            # embedded raster + color_space
+      - clipping         # clip_path, clip_box
+      - resource_table   # 名前 → 資源 の間接参照表
+
+  resolution:
+    # 原点・単位・Y 軸。「同じ 100 単位」が同じ物理量か否か。
+    coordinate_space:
+      - pt72          # PostScript/PDF: 1/72 inch。基準
+      - in            # inch
+      - mm
+      - cm
+      - px96          # CSS: 1/96 inch。HTML→PDF が既定でこれ
+      - user_unit     # SVG の既定。単位不定
+      - tex_sp        # TeX: 1pt = 1/72.27 inch。PostScript と微妙に違う
+    origin:
+      - bottom_left    # PostScript, PDF, TeX
+      - top_left      # SVG, HTML/CSS, 画像座標
+    y_axis:
+      - up            # PostScript, PDF, TeX
+      - down          # SVG, HTML/CSS
+    # → origin も y_axis も PDL ごとに違う。
+    #   これが「等価でない」最初の場所であり、
+    #   変換は，还需要 scale factor の計算を伴う。
+
+  capability:
+    # 何を表現できるかの差分。これが等価性の**限界**を定める。
+    typography:
+      - outline_glyphs       # SVG, PostScript(Type 1/42)
+      - font_programming     # PostScript, TeX (ائلة micro)
+      - text_layout          # 段落・行分割・日本語組版 — TeX のみ
+      - glyph_positioning    # 全部
+    vector:
+      - bezier              # SVG, PostScript, PDF
+      - nurbs               # DXF, PostScript
+    raster:
+      - inline_raster       # PostScript, PDF
+      - external_raster     # DXF, HPGL
+    color:
+      - device_rgb
+      - cmyk                # PostScript, PDF
+      - named_spot          # PostScript, PDF, DXF( ACI )
+      - icc_profile         # PostScript 3, PDF
+    other:
+      - imposition          # PostScript, PDF
+      - layers              # DXF, PDF( OCG )
+      - parametric_geometry # DXF, TeX
+      - z_order             # 全部
+
+  interpreter:
+    # Semantics を実行する実装。PDL 自体とは別物の存在。
+    - name: tectonic
+      member: [tex]
+      kind: xetex_based
+    - name: ghostscript
+      member: [postscript_level2, postscript_level3, pdf]
+      kind: interpreter
+      note: PostScript と PDF の両方を解釈する唯一の重要な実装
+    - name: poppler
+      member: [pdf]
+      kind: renderer
+    - name: browser
+      member: [svg, html]
+      kind: renderer
+    - name: librecad_dxf
+      member: [dxf]
+      kind: application
+    - name: plotter_firmware
+      member: [hpgl, gpgl]
+      kind: firmware
+
+# -----------------------------------------------------------------------------
+# 具象 PDL
+# -----------------------------------------------------------------------------
+concrete_pdl:
+
+  tex:
+    syntax: stack_postscript
+    semantics: shared_base
+    resolution: {pt72: approx, origin: bottom_left, y_axis: up}
+    capability: {text_layout: yes, font_programming: yes, imposition: no}
+    interpreter: tectonic
+    # 特殊: TeX は .tex が幾何を含まない。「プログラム」である。
+    nature: program
+    lowers_to: vault
+
+  postscript:
+    variant: [level2, level3]
+    syntax: text_based
+    semantics: shared_base
+    resolution: {pt72: exact, origin: bottom_left, y_axis: up}
+    capability: {font_programming: yes, icc_profile: yes, imposition: yes}
+    interpreter: ghostscript
+    nature: program          # 実行時 semantics が確定する
+    lowers_to: vault
+
+  ghostscript:
+    # Ghostscript は PDL ではなく interpreter。
+    # ここで举げるのは「PostScript の解釈」という責務である。
+    role: interpreter
+    interprets: [postscript_level2, postscript_level3, pdf]
+    provides: [color_management, font_substitution, device_output]
+    notable_api: [pdfwrite, ps2write, txtwrite]
+    # → device にWritten하기 위한 最後の境界
+
+  dxf:
+    syntax: record_based
+    semantics: shared_base
+    resolution: {user_unit: ambiguous, origin: varies_by_version, y_axis: varies}
+    capability: {nurbs: yes, layers: yes, parametric_geometry: yes, typography: no}
+    interpreter: application
+    nature: data           # 実行ではなくCADの交換形式
+    # DXF は geometry の**設計意图**を保持する。
+    # unique な点: 再構成可能。plotter に送っても元に戻せる。
+    reversible: true
+
+  svg:
+    syntax: xml_like
+    semantics: shared_base
+    resolution: {user_unit: ambiguous, origin: top_left, y_axis: down}
+    capability: {outline_glyphs: yes, bezier: yes, icc_profile: no}
+    interpreter: browser
+    nature: data
+    reversible: true       # XML なので可逆
+
+  plotter_language:
+    member: [hpgl, gpgl, epson_escapes]
+    syntax: command_stream
+    semantics: shared_base_subset
+    resolution: {user_unit: plotter_units, origin: plotter_home, y_axis: up}
+    capability: {typography: partial, bezier: partial, raster: external_only}
+    interpreter: firmware
+    nature: program
+    # 最も減損が大きい。plotter units が物理意味を持たない。
+    loss_profile: severe
+
+# -----------------------------------------------------------------------------
+# 等価性の表明
+# -----------------------------------------------------------------------------
+equivalence:
+  statement: >-
+    上記のすべての PDL は PageDescription という一つの型に属する。
+    型 PageDescription は Syntax を除いて共通であり、
+    Syntax は Lowering で消去される。
+
+  the_dom:
+    name: vault
+    # → ontology/vault.yml
+    absorbs: [tex, postscript, dxf, svg, plotter_language, html]
+
+  loss_is_asymmetric: true
+  loss_order:
+    - svg          # ほぼ無損失。XML なので逆変換可
+    - dxf          # 設計意図は残るが typography を失う
+    - postscript   # 実行結果のみ。逆変換不可
+    - tex          # .tex は幾何を含まない。两大接近不可逆
+    - plotter_language  # 物理単位が無い。最も重い損失
+
+  why_asymmetric: >-
+    構文が rich であればあるほど、意味を復元する情報が残る。
+    SVG は要素名と属性が意味を明示する。
+    PostScript は実行して初めて意味が確定する。
+    TeX はプログラムであり、中間状態は一時的にしか存在しない。

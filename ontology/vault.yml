@@ -1,0 +1,211 @@
+# =============================================================================
+# Vault — すべての PDL を吸収する正規形（DOM）
+# =============================================================================
+#
+# 「等価に扱う」を実装する場所。
+# TeX / PostScript / DXF / SVG / プロッタ言語 / HTML は
+# すべて Lowering によってこの型に落ちる。
+#
+# 語彙について:
+#   製本では「見開き」に対して「製本（binding）」を行う。
+#   DTPX では paper_types（sheet_web 等）と binding_operation（この工序）を
+#   区別するため、受け皿を Vault（収蔵庫）と呼ぶ。
+#   Vault は「装丁之前的束ねたもの」— まだ紙ではない。
+#
+# 位置づけ:
+#
+#     Meaning → Content → Document → Layout → [VAULT] → PDL → RIP/Device
+#                                        ↑
+#                                   ここが HTML/TeX/PostScript が合流する点
+#
+# =============================================================================
+
+vault:
+  # -------------------------------------------------------------------------
+  # ページ（物理寸法を確定させる）
+  # -------------------------------------------------------------------------
+  page:
+    trim_box: {x, y, width, height}      # 裁ち後の実寸。単位は pt72 に正規化
+    bleed_box: {x, y, width, height}     # 断ち Packages 用のはみ出し
+    media_box: {x, y, width, height}     # 用紙全寸
+    orientation: [portrait, landscape]
+    resolution_basis: pt72               # 正規化の基準
+    # 注意: SVG/HTML は px96 で組まれる。正規化で 0.75 倍になる。
+
+  # -------------------------------------------------------------------------
+  # レイヤ（順序と分離の単位）
+  # -------------------------------------------------------------------------
+  layer:
+    id: string
+    z_order: int
+    visible: bool
+    knockout: bool        # 下のレイヤを穿つ
+    overprint: bool       # 印刷時に重なりを許容
+    # → ontology: separation, plate
+    # ここが「色」を Ink/Plate に落とす唯一の単位。
+
+  # -------------------------------------------------------------------------
+  # マーク（ページに置かれたもの）
+  # -------------------------------------------------------------------------
+  mark:
+    kind: [path, text_run, image, group]
+
+    geometry:
+      path:
+        - move_to {x, y}
+        - line_to {x, y}
+        - curve_to {x1, y1, x2, y2, x, y}
+        - close
+      transform: {a, b, c, d, e, f}     # 2x3 affine。原点は左上が正
+
+    paint:
+      fill:
+        color: {space, value}           # rgb / cmyk / lab / spot_name
+        rule: [nonzero, evenodd]
+      stroke:
+        color: {space, value}
+        width: pt
+        cap: [butt, round, square]
+        join: [miter, round, bevel]
+        dash: array
+      # color は Colorant ではなく「見え方」。印刷分辨は layer で行う。
+
+    text_run:
+      font_ref: string                  # resource_table への参照
+      size: pt
+      glyph_ids: array                  # 字符 ID であり、文字コードではない
+      positioning: [explicit, flow, glyph_run]
+      writing_mode: [horizontal, vertical]
+      # TeX の段落組版は glyph_ids + positioning へ完全に落ちる。
+      # → flow で入稿した場合、この時点で「組版済み」にすぎない。
+      #   行分割・日本語ルビ・縦組の判断は すでに終わっている。
+      ligatures_resolved: bool         # 分解済みか
+      script_run_features: array        # 原語のカ اغり
+
+    image:
+      resource_ref: string
+      color_space: [gray, rgb, cmyk, indexed]
+      bits_per_pixel: int
+      interpolation: [nearest, bilinear, bicubic]
+
+    group:
+      children: array
+      clip: path
+
+  # -------------------------------------------------------------------------
+  # リソース（名前 → 実体 の間接参照）
+  # -------------------------------------------------------------------------
+  # PostScript は /Helvetica findfont、PDF は /F1 12 0 R で参照する。
+  # この**間接層**があれば「同じフォントを 100 箇所で共有」が可能になり、
+  # インキ置換や分離が可能になる。直接参照だと資源が埋め形式で硬直する。
+  resource_table:
+    font:
+      - id: F1
+        typeface: [Type1, TrueType, Type42, CFF, CIDFont]
+        embedded: bool
+        # 日本語は CIDFont が必須。8bit には日本語は入らない。
+        # TeX の和文は原則 Type1 だが CID 化されることがある。
+    image:
+      - id: I1
+        stream: string
+    icc_profile:
+      - id: C1
+        space: [rgb, cmyk, gray]
+        n_components: int
+    spot_color:
+      - name: string
+        colorant_ref: string
+        # → ontology: colorant, ink, plate
+
+  # -------------------------------------------------------------------------
+  # メタ（どの PDL から来たか）
+  # -------------------------------------------------------------------------
+  provenance:
+    source_pdl: [tex, postscript, dxf, svg, plotter_language, html]
+    source_file: string
+    # Lowering は info を保存する。失うと再現性が消える。
+    engine_version: string          # tectonic 0.17, ghostscript 10.x
+    lowering_fidelity: [lossless, lossy, reconstructible, opaque]
+    # opaque: TeX。.tex から vault への逆変換は原理的にできない。
+
+# -----------------------------------------------------------------------------
+# Lowering — 各 PDL から Vault への写像
+# -----------------------------------------------------------------------------
+lowering:
+
+  svg:
+    to: vault
+    fidelity: lossless
+    reversible: true
+    transforms_required:
+      - transform: y_axis_flip        # down → up
+        note: 全 path に -y を掛ける
+      - transform: unit_resolution     # user_unit → pt72
+      - transform: font_outline       # text → path（または font_table で保持）
+    trap: >-
+      SVG の font-family は環境依存。ブラウザが解決する。
+      確定させるには text を path 化する必要がある。
+      逆に path 化すると編集可能性を失う。ここはトレードオフでしかない。
+
+  dxf:
+    to: vault
+    fidelity: reconstructible
+    reversible: true
+    transforms_required:
+      - transform: layer_to_layer      # DXF の layer → vault の layer
+      - transform: block_expand        # BLOCK/INSERT を展開
+      - transform: linetype_substitute # 線種の Scale を解決
+    preserves: [design_intent]         # 何 progesterone するかが残る
+    loses: [typography]                # DXF に組版は無い
+
+  postscript:
+    to: vault
+    fidelity: lossy
+    reversible: false
+    execution: required                # 実行しないと意味が確定しない
+    transforms_required:
+      - transform: interpreter_run     # ghostscript に通す
+      - transform: font_instantiation # /Helvetica → 実体
+      - transform: color_conversion   # DeviceGray → ColorSpace 付きへ
+    trap: >-
+      PostScript は Turing 完全。実行しないと unknown。
+      そのため vault を作るには必ず**実行**を要する。
+      HTML/TeX と違い、「読むだけ」では vault にならない。
+
+  tex:
+    to: vault
+    fidelity: opaque
+    reversible: false
+    execution: required
+    transforms_required:
+      - transform: engine_run          # tectonic で組版
+      - transform: box_extraction      # PDF から glyph position を取り出す
+    note: >-
+      TeX は**プログラム**であり vault を含まない。
+      「意味から幾何」は TeX エンジン内で行われ、
+      観測できるのは PDF という別の PDL のみ。
+      したがって TeX の lowering は常に「TeX → PDF → vault」の二段になる。
+      これはpandoc や LaTeX パターンの本質的な制約であり、
+      テンプレートをどれだけ書いても回避できない。
+
+  plotter_language:
+    to: vault
+    fidelity: lossy
+    reversible: false
+    transforms_required:
+      - transform: unit_interpretation # plotter units → pt72（情報がない）
+      - transform: pen_selection       # ペン番号 → Colorant
+    note: >-
+      最も重い損失。plotter の単位に物理意味が無い環境では
+      出力本身就「何 cm か」をansweredない。
+
+  html:
+    to: vault
+    fidelity: lossy
+    reversible: false
+    execution: required               # ブラウザに layout させる
+    transforms_required:
+      - transform: layout_run          # CSS layout を実行
+      - transform: fragmentation       # paged media で改ページ
+    engine: browser
+    # → model/html-to-pdf.md

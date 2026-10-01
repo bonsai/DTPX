@@ -17,9 +17,69 @@ relations:
   - [plate, drives, printer]
   - [printer, deposits, ink]
   - [ink, interacts_with, paper]
-  - [html_css, rendered_by, browser]
-  - [tex, generates, pdf]
-  - [dxf, describes, geometry]
   - [proof, observes, output]
   - [output, produces, experience]
   - [experience, feeds_back_to, editor]
+
+  # --- PDL 等価性 -----------------------------------------------------------
+  # すべての PDL は PageDescription の 1 実装であり、
+  # Syntax をLowering で消去すると vault に落ちる。
+  # 型定義: ontology/pdl.yml
+  # 実装: ontology/vault.yml
+  #
+  # 既存_relation の置き換え:
+  #   [tex, generates, pdf]
+  #   [html_css, rendered_by, browser]
+  #   [dxf, describes, geometry]
+  #   はいずれも「pdl_lowers_to vault」に統合される。
+
+  - [pdl, is_a, page_description]
+  - [page_description, has_syntax, pdl_syntax]
+  - [page_description, has_semantics, pdl_semantics]
+  - [page_description, has_resolution, pdl_resolution]
+  - [page_description, has_capability, pdl_capability]
+  - [page_description, executed_by, interpreter]
+
+  # 構文を消去する写像。 Syntax が無くなるのが等価の本体。
+  - [pdl_syntax, eliminated_by, lowering]
+  - [pdl_semantics, survives, lowering]
+
+  - [tex, lowers_to, vault]
+  - [postscript, lowers_to, vault]
+  - [ghostscript_vm, lowers_to, vault]
+  - [dxf, lowers_to, vault]
+  - [svg, lowers_to, vault]
+  - [plotter_language, lowers_to, vault]
+  - [html, lowers_to, vault]
+
+  # Vault が保持する構造。DTPX の既存語彙に写像する。
+  - [vault, contains, layer]
+  - [vault, contains, mark]
+  - [vault, references, resource_table]
+  - [layer, carries, separation]
+  - [mark, has_geometry, geometry]
+  - [mark, has_color, color]
+  - [vault, normalizes_to, pt72]
+  - [vault, records, provenance]
+
+  # 実行が必要な形式（読むだけでは vault にならない）
+  - [postscript, requires, execution]
+  - [tex, requires, execution]
+  - [html, requires, execution]
+
+  # 逆変換が Onesided な形式
+  - [svg, invertible_to, vault]
+  - [dxf, invertible_to, vault]
+  - [tex, not_invertible_to, vault]
+
+  # Ghostscript は PDL ではなく interpreter
+  - [ghostscript, interprets, postscript]
+  - [ghostscript, interprets, pdf]
+  - [ghostscript, writes, device]
+
+  # 下流
+  - [vault, becomes, pdl]
+  - [vault, becomes, raster]
+  - [pdl, interpreted_by, rip]
+  - [html, rendered_by, browser]
+  - [browser, produces, vault]

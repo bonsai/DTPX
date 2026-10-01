@@ -2,11 +2,28 @@ pipeline:
   semantic: {input: meaning, output: structured_content}
   editorial: {input: structured_content, output: document}
   composition: {input: document, output: pages}
-  graphics: {input: pages, output: geometry_and_color}
+
+  # --- Lowering: すべての PDL が vault へ落ちる ---------------------------
+  # 仕様: ontology/pdl.yml / ontology/vault.yml
+  # TeX / PostScript / Ghostscript / DXF / SVG / プロッタ言語 / HTML は
+  # Syntax を除此之外けば同じ PageDescription 型であり、
+  # Lowering で Syntax が消去され vault に落ちる。
+  lowering:
+    input: [tex, postscript, ghostscript_vm, dxf, svg, plotter_language, html]
+    output: vault
+    # fidelity は非対称:
+    #   svg               = lossless          （逆変換可）
+    #   dxf               = reconstructible   （設計意図が戻る）
+    #   postscript        = lossy             （実行結果のみ）
+    #   tex               = opaque            （.tex に幾何が無い）
+    #   plotter_language  = lossy             （物理単位が無い）
+    # → ontology/pdl.yml の equivalence.loss_is_asymmetric
+
+  graphics: {input: [pages, vault], output: geometry_and_color}
   color: {input: color, output: color_managed_representation}
   pdl:
-    input: pages
-    output: [postscript, pdf]
+    input: [pages, vault]
+    output: [postscript, pdf, svg]
   raster: {input: pdl, output: device_raster}
   production:
     input: device_raster

@@ -40,6 +40,39 @@ entities:
     - postscript
     - eps
     - dxf
+  # --- PDL 型（ontology/pdl.yml が定義の詳細） ---------------------------
+  pdl:
+    # 「等価に扱う」ための型。formats はその実装 목록。
+    - tex
+    - postscript
+    - dxf
+    - svg
+    - plotter_language
+    - html
+    - pdf
+  pdl_components:
+    - pdl_syntax
+    - pdl_semantics
+    - pdl_resolution
+    - pdl_capability
+    - interpreter
+  # --- Vault（正規形 / DOM）ontology/vault.yml ---------------------------
+  vault:
+    - page
+    - layer
+    - mark
+    - resource_table
+    - provenance
+  vault_mark:
+    - path
+    - text_run
+    - image
+    - group
+  vault_resource:
+    - font
+    - image
+    - icc_profile
+    - spot_color
   process:
     - composition
     - imposition
