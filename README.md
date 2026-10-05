@@ -129,3 +129,15 @@ Proofする
 ```
 
 DTPXのゴールは「PDFができた」ではなく、**媒体上で意図した体験が成立した**ことである。
+
+## Toilet-paper typesetting
+
+トイレットペーパーを長尺の読書媒体として扱う。本文は媒体仕様から独立したJSONLを正本とし、横書き日本語・縦書き日本語・横書き英語へ同じ内容を再組版できる。
+
+- media: 114mm × 30m, 2-ply, flexography, 1-color body print
+- printable pattern: 75mm × 860mm, 20mm gap
+- recommended prototype body: 9pt / 14pt line height
+- `specs/toilet-paper.jsonl`: media and layout contracts
+- `examples/interview-10000.jsonl`: 10,000-character interview structure example
+
+Pipeline: `interview.jsonl → layout JSONL → 860mm patterns → SVG → PDF/EPS`
