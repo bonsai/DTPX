@@ -1,0 +1,8 @@
+{"type":"work","id":"interview-001","title":"Example 10,000-character interview","language":"ja","target_chars":10000}
+{"type":"section","id":"intro","role":"lead","text":"インタビュー導入文をここに入れる。"}
+{"type":"question","id":"q001","speaker":"interviewer","text":"なぜこの仕事を始めたんですか？"}
+{"type":"answer","id":"a001","speaker":"interviewee","text":"回答本文をここに入れる。実データではこの単位で全文を保持する。"}
+{"type":"question","id":"q002","speaker":"interviewer","text":"その頃、一番苦労したことは？"}
+{"type":"answer","id":"a002","speaker":"interviewee","text":"回答本文をここに入れる。"}
+{"type":"section","id":"end","role":"epilogue","text":"インタビューを終えて。"}
+{"type":"credit","id":"credit-001","editor":"bonsai","year":2026}
