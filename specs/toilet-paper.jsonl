@@ -1,0 +1,5 @@
+{"type":"media","id":"toilet-paper-114x30000","name":"Toilet Paper","width_mm":114,"length_mm":30000,"ply":2,"print_method":"flexography","print_color_count":1,"print_width_mm":75,"pattern_length_mm":860,"pattern_gap_mm":20}
+{"type":"layout","id":"toilet-paper-ja-horizontal","media_id":"toilet-paper-114x30000","language":"ja","writing_mode":"horizontal-tb","direction":"ltr","line_break":"character","font_size_pt":9,"line_height_pt":14}
+{"type":"layout","id":"toilet-paper-ja-vertical","media_id":"toilet-paper-114x30000","language":"ja","writing_mode":"vertical-rl","direction":"ltr","line_break":"character","font_size_pt":9,"line_height_pt":14}
+{"type":"layout","id":"toilet-paper-en-horizontal","media_id":"toilet-paper-114x30000","language":"en","writing_mode":"horizontal-tb","direction":"ltr","line_break":"word","hyphenation":true,"font_size_pt":9,"line_height_pt":14}
+{"type":"pattern","id":"toilet-paper-pattern","media_id":"toilet-paper-114x30000","width_mm":75,"height_mm":860,"gap_mm":20,"repeatable":true}
